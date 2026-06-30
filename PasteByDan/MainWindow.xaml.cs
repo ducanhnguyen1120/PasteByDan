@@ -165,14 +165,11 @@ namespace PasteByDan
         {
             if (item == null) return;
             CopyItem(item);
-            var hwnd = _prevHwnd;
             Hide();
-            // Focus on UI thread immediately after hide (UI thread has message loop → AttachThreadInput reliable)
-            PasteService.FocusWindow(hwnd);
-            // SendCtrlV after 200ms, also on UI thread via DispatcherTimer
+            // Let Windows restore focus naturally after Hide(), then send Ctrl+V
             var timer = new System.Windows.Threading.DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(200)
+                Interval = TimeSpan.FromMilliseconds(350)
             };
             timer.Tick += (s, e) =>
             {

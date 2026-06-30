@@ -54,38 +54,14 @@ namespace PasteByDan.Services
             try
             {
                 SetIgnoreNext(true);
-                bool opened = false;
-                for (int i = 0; i < 5; i++)
-                {
-                    if (Win32.OpenClipboard(hwnd)) { opened = true; break; }
-                    System.Threading.Thread.Sleep(20);
-                }
-                if (!opened) { SetIgnoreNext(false); return; }
-
-                Win32.EmptyClipboard();
-
-                var bytes = System.Text.Encoding.Unicode.GetBytes(text + "\0");
-                IntPtr hMem = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, (uint)bytes.Length);
-                if (hMem != IntPtr.Zero)
-                {
-                    IntPtr ptr = Win32.GlobalLock(hMem);
-                    if (ptr != IntPtr.Zero)
-                    {
-                        Marshal.Copy(bytes, 0, ptr, bytes.Length);
-                        Win32.GlobalUnlock(hMem);
-                    }
-                    Win32.SetClipboardData(Win32.CF_UNICODETEXT, hMem);
-                }
-
-                // Suppress clipboard history — must allocate real memory (IntPtr.Zero = delayed rendering, doesn't work)
-                IntPtr hExclude = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, 1);
-                Win32.SetClipboardData(CF_EXCLUDE, hExclude);
-                Win32.CloseClipboard();
+                var data = new System.Windows.DataObject();
+                data.SetText(text);
+                data.SetData("ExcludeClipboardContentFromMonitorProcessing", new byte[1]);
+                System.Windows.Clipboard.SetDataObject(data, copy: true);
             }
             catch
             {
                 SetIgnoreNext(false);
-                try { Win32.CloseClipboard(); } catch { }
             }
         }
 
@@ -94,40 +70,14 @@ namespace PasteByDan.Services
             try
             {
                 SetIgnoreNext(true);
-                bool opened = false;
-                for (int i = 0; i < 5; i++)
-                {
-                    if (Win32.OpenClipboard(hwnd)) { opened = true; break; }
-                    System.Threading.Thread.Sleep(20);
-                }
-                if (!opened) { SetIgnoreNext(false); return; }
-
-                Win32.EmptyClipboard();
-
-                var dibData = BitmapSourceToDib(bmp);
-                if (dibData != null)
-                {
-                    IntPtr hMem = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, (uint)dibData.Length);
-                    if (hMem != IntPtr.Zero)
-                    {
-                        IntPtr ptr = Win32.GlobalLock(hMem);
-                        if (ptr != IntPtr.Zero)
-                        {
-                            Marshal.Copy(dibData, 0, ptr, dibData.Length);
-                            Win32.GlobalUnlock(hMem);
-                        }
-                        Win32.SetClipboardData(Win32.CF_DIB, hMem);
-                    }
-                }
-
-                IntPtr hExclude2 = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, 1);
-                Win32.SetClipboardData(CF_EXCLUDE, hExclude2);
-                Win32.CloseClipboard();
+                var data = new System.Windows.DataObject();
+                data.SetImage(bmp);
+                data.SetData("ExcludeClipboardContentFromMonitorProcessing", new byte[1]);
+                System.Windows.Clipboard.SetDataObject(data, copy: true);
             }
             catch
             {
                 SetIgnoreNext(false);
-                try { Win32.CloseClipboard(); } catch { }
             }
         }
 
