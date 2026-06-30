@@ -74,6 +74,12 @@ namespace PasteByDan.Services
             try
             {
                 Win32.EmptyClipboard();
+                // Set CF_EXCLUDE FIRST before content — order may matter for Windows Clipboard History
+                if (CF_EXCLUDE != 0)
+                {
+                    IntPtr hEx = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE | Win32.GMEM_ZEROINIT, 1);
+                    if (hEx != IntPtr.Zero) { Win32.SetClipboardData(CF_EXCLUDE, hEx); Log($"CF_EXCLUDE set first, hEx={hEx.ToInt64():X}"); }
+                }
                 var bytes = System.Text.Encoding.Unicode.GetBytes(text + "\0");
                 IntPtr hText = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, (uint)bytes.Length);
                 if (hText != IntPtr.Zero)
@@ -81,15 +87,22 @@ namespace PasteByDan.Services
                     IntPtr ptr = Win32.GlobalLock(hText);
                     if (ptr != IntPtr.Zero) { Marshal.Copy(bytes, 0, ptr, bytes.Length); Win32.GlobalUnlock(hText); }
                     Win32.SetClipboardData(Win32.CF_UNICODETEXT, hText);
-                }
-                if (CF_EXCLUDE != 0)
-                {
-                    IntPtr hEx = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE | Win32.GMEM_ZEROINIT, 1);
-                    if (hEx != IntPtr.Zero) { Win32.SetClipboardData(CF_EXCLUDE, hEx); Log($"CF_EXCLUDE set, hEx={hEx.ToInt64():X}"); }
+                    Log($"CF_UNICODETEXT set, hText={hText.ToInt64():X}, len={bytes.Length}");
                 }
             }
             catch (Exception ex) { Log($"WriteText error: {ex.Message}"); SetIgnoreNext(false); }
-            finally { Win32.CloseClipboard(); Log("WriteText: CloseClipboard done"); }
+            finally
+            {
+                Win32.CloseClipboard();
+                // Verify CF_EXCLUDE is actually in clipboard after close
+                if (Win32.OpenClipboard(IntPtr.Zero))
+                {
+                    bool hasEx = Win32.IsClipboardFormatAvailable(CF_EXCLUDE);
+                    bool hasTxt = Win32.IsClipboardFormatAvailable(Win32.CF_UNICODETEXT);
+                    Log($"Verify after close: hasExclude={hasEx}, hasText={hasTxt}");
+                    Win32.CloseClipboard();
+                }
+            }
         }
 
         public static void WriteImageSuppressed(BitmapSource bmp, IntPtr hwnd)

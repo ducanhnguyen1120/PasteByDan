@@ -137,6 +137,12 @@ namespace PasteByDan.Services
         public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll")]
+        public static extern bool IsClipboardFormatAvailable(uint format);
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetLastError();
+
+        [DllImport("user32.dll")]
         public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
 
         [StructLayout(LayoutKind.Sequential)]

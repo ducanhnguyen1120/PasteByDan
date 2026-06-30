@@ -221,10 +221,14 @@ namespace PasteByDan
             {
                 timer.Stop();
                 var fg = Win32.GetForegroundWindow();
+                try
+                {
+                    var clipText = System.Windows.Clipboard.GetText();
+                    Log($"Clipboard at paste: '{(clipText?.Length > 40 ? clipText.Substring(0, 40) : clipText)}'");
+                }
+                catch (Exception ex2) { Log($"Clipboard read error: {ex2.Message}"); }
                 Log($"Timer fired: fg={fg.ToInt64():X}");
-                // Try WM_PASTE direct (works for standard controls without focus)
                 PasteService.WmPasteTo(hwnd);
-                // Also inject Ctrl+V via SendInput
                 PasteService.SendCtrlV();
             };
             timer.Start();

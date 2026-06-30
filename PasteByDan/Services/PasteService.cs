@@ -77,7 +77,8 @@ namespace PasteByDan.Services
 
                 int inputSize = Marshal.SizeOf(typeof(Win32.INPUT));
                 uint sent = Win32.SendInput(4, inputs, inputSize);
-                Log($"SendInput: size={inputSize}, sent={sent}");
+                uint err = Win32.GetLastError();
+                Log($"SendInput: size={inputSize}, sent={sent}, lastErr={err}");
             }
             catch (Exception ex) { Log($"SendCtrlV error: {ex.Message}"); }
         }
