@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using PasteByDan.Models;
 
 namespace PasteByDan.Services
@@ -10,8 +11,10 @@ namespace PasteByDan.Services
     {
         public List<ClipboardItem> Items { get; set; } = new List<ClipboardItem>();
         public List<ClipGroup> Groups { get; set; } = new List<ClipGroup>();
-        public string HotkeyModifiers { get; set; } = "Ctrl+Shift";
-        public string HotkeyKey { get; set; } = "V";
+        // VK codes: LCtrl=0xA2, RCtrl=0xA3, LShift=0xA0, RShift=0xA1, LAlt=0xA4, RAlt=0xA5, LWin=0x5B, RWin=0x5C
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<int> HotkeyModVKs { get; set; } = new List<int> { 0xA2, 0xA0 }; // LCtrl + LShift
+        public int HotkeyTriggerVK { get; set; } = 0x43; // C
         public bool DarkTheme { get; set; } = true;
     }
 

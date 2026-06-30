@@ -186,7 +186,8 @@
             <Border Grid.Row="2" Background="{DynamicResource CardsAreaBg}">
                 <ScrollViewer x:Name="CardsScroll"
                               HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
+                              VerticalScrollBarVisibility="Disabled"
+                              PreviewMouseWheel="CardsScroll_PreviewMouseWheel">
                     <ItemsControl x:Name="CardsList" ItemsSource="{Binding FilteredItems}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -215,61 +216,63 @@
                                     </Border.ContextMenu>
 
                                     <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                        <!-- Content layout — fixed rows, unaffected by overlay -->
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="0" Margin="8,8,8,4">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Border Grid.Column="0" CornerRadius="4" Padding="5,2"
-                                                    Background="{Binding Type, Converter={StaticResource TypeToColor}}">
-                                                <TextBlock Text="{Binding Type, Converter={StaticResource TypeToLabel}}"
-                                                           Foreground="White" FontSize="9" FontWeight="Bold"
-                                                           FontFamily="Segoe UI"/>
-                                            </Border>
-                                            <TextBlock Grid.Column="2" FontSize="11"
-                                                       Text="{Binding IsPinned, Converter={StaticResource PinIcon}}"
-                                                       Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
-                                                       VerticalAlignment="Center"/>
-                                        </Grid>
+                                            <Grid Grid.Row="0" Margin="8,8,8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" CornerRadius="4" Padding="5,2"
+                                                        Background="{Binding Type, Converter={StaticResource TypeToColor}}">
+                                                    <TextBlock Text="{Binding Type, Converter={StaticResource TypeToLabel}}"
+                                                               Foreground="White" FontSize="9" FontWeight="Bold"
+                                                               FontFamily="Segoe UI"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="2" FontSize="11"
+                                                           Text="{Binding IsPinned, Converter={StaticResource PinIcon}}"
+                                                           Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
 
-                                        <Grid Grid.Row="1" Margin="8,2">
-                                            <TextBlock Text="{Binding Preview}"
-                                                       Foreground="{DynamicResource TextPrimary}"
-                                                       FontFamily="Segoe UI" FontSize="12"
-                                                       TextWrapping="Wrap" MaxHeight="60"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       x:Name="PreviewText"/>
-                                            <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImage}}"
-                                                   MaxHeight="70" Stretch="Uniform"
-                                                   x:Name="PreviewImage" Visibility="Collapsed"/>
-                                        </Grid>
+                                            <Grid Grid.Row="1" Margin="8,2">
+                                                <TextBlock Text="{Binding Preview}"
+                                                           Foreground="{DynamicResource TextPrimary}"
+                                                           FontFamily="Segoe UI" FontSize="12"
+                                                           TextWrapping="Wrap" MaxHeight="60"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           x:Name="PreviewText"/>
+                                                <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImage}}"
+                                                       MaxHeight="70" Stretch="Uniform"
+                                                       x:Name="PreviewImage" Visibility="Collapsed"/>
+                                            </Grid>
 
-                                        <Grid Grid.Row="2" Margin="8,4,8,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding TimeAgo}"
+                                            <TextBlock Grid.Row="2" Margin="8,4,8,8"
+                                                       Text="{Binding TimeAgo}"
                                                        Foreground="{DynamicResource TextSecondary}"
-                                                       FontSize="10" FontFamily="Segoe UI"
-                                                       VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                        x:Name="HoverActions" Visibility="Collapsed">
-                                                <Button Style="{StaticResource CardBtn}" Content="📌"
-                                                        FontSize="11" Padding="4,2"
-                                                        Click="CardPin_Click" Tag="{Binding}"/>
-                                                <Button Style="{StaticResource CardBtn}" Content="🗑"
-                                                        FontSize="11" Padding="4,2"
-                                                        Click="CardDelete_Click" Tag="{Binding}"/>
-                                            </StackPanel>
+                                                       FontSize="10" FontFamily="Segoe UI"/>
                                         </Grid>
+
+                                        <!-- Action buttons — overlaid, no effect on layout -->
+                                        <StackPanel x:Name="HoverActions"
+                                                    Orientation="Horizontal"
+                                                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                                    Margin="0,0,4,4"
+                                                    Visibility="Collapsed">
+                                            <Button Style="{StaticResource CardBtn}" Content="📌"
+                                                    FontSize="11" Padding="4,2"
+                                                    Click="CardPin_Click" Tag="{Binding}"/>
+                                            <Button Style="{StaticResource CardBtn}" Content="🗑"
+                                                    FontSize="11" Padding="4,2"
+                                                    Click="CardDelete_Click" Tag="{Binding}"/>
+                                        </StackPanel>
                                     </Grid>
 
                                     <Border.Style>

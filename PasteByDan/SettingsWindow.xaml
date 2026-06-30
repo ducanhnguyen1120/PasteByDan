@@ -1,10 +1,12 @@
 <Window x:Class="PasteByDan.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings — Paste by Dan" Width="420" Height="320"
+        Title="Settings — Paste by Dan" Width="420" Height="360"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize" ShowInTaskbar="False"
-        Background="#1A1A1A" Foreground="White">
+        Background="#1A1A1A" Foreground="White"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewKeyUp="Window_PreviewKeyUp">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,16 +23,45 @@
         <TextBlock Grid.Row="0" Text="Settings" FontFamily="Segoe UI" FontSize="18"
                    FontWeight="SemiBold" Foreground="White"/>
 
+        <!-- Hotkey section -->
         <StackPanel Grid.Row="2">
             <TextBlock Text="Global Hotkey" Foreground="#888" FontFamily="Segoe UI" FontSize="12" Margin="0,0,0,6"/>
-            <Border Background="#2A2A2A" CornerRadius="6" Padding="12,8">
-                <TextBlock x:Name="HotkeyLabel" Text="Ctrl + Shift + V"
-                           Foreground="White" FontFamily="Segoe UI" FontSize="14"/>
-            </Border>
-            <TextBlock Text="(Hotkey is fixed as Ctrl+Shift+V in this version)"
-                       Foreground="#555" FontSize="11" FontFamily="Segoe UI" Margin="0,4,0,0"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="#2A2A2A" CornerRadius="6" Padding="12,10">
+                    <TextBlock x:Name="HotkeyLabel" Foreground="White" FontFamily="Segoe UI" FontSize="14"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <Button Grid.Column="2" x:Name="RecordBtn" Content="Change"
+                        Width="80" Height="36"
+                        Background="#5B8AF5" Foreground="White" BorderThickness="0"
+                        Cursor="Hand" FontFamily="Segoe UI" FontSize="13"
+                        Click="RecordBtn_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6"
+                                    Padding="10,6">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#7AA3FF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+            <TextBlock x:Name="RecordHint" Foreground="#F5A623" FontFamily="Segoe UI" FontSize="11"
+                       Margin="0,6,0,0" Visibility="Collapsed"
+                       Text="Hold modifier keys then press trigger key. Esc to cancel."/>
         </StackPanel>
 
+        <!-- Dark theme -->
         <StackPanel Grid.Row="4" Orientation="Horizontal">
             <TextBlock Text="Dark Theme" Foreground="#BBBBBB" FontFamily="Segoe UI" FontSize="13"
                        VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -38,6 +69,7 @@
                       Foreground="White" Click="DarkTheme_Click"/>
         </StackPanel>
 
+        <!-- Data path -->
         <StackPanel Grid.Row="6">
             <TextBlock Text="Data stored at:" Foreground="#888" FontFamily="Segoe UI" FontSize="12" Margin="0,0,0,4"/>
             <TextBlock x:Name="StorePath" Text="" Foreground="#5B8AF5"

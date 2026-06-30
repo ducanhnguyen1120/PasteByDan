@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -45,6 +46,18 @@ namespace PasteByDan.ViewModels
         {
             get => _isDarkTheme;
             set { _isDarkTheme = value; OnPropertyChanged(); _data.DarkTheme = value; SaveData(); }
+        }
+
+        public List<int> HotkeyModVKs
+        {
+            get => _data.HotkeyModVKs;
+            set { _data.HotkeyModVKs = value; SaveData(); OnPropertyChanged(); }
+        }
+
+        public int HotkeyTriggerVK
+        {
+            get => _data.HotkeyTriggerVK;
+            set { _data.HotkeyTriggerVK = value; SaveData(); OnPropertyChanged(); }
         }
 
         public MainViewModel()

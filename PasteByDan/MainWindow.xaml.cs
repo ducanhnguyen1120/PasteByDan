@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,8 +24,9 @@ namespace PasteByDan
         private IntPtr _winEventHook;
         private Win32.WinEventDelegate _winEventDelegate;
 
-        private const int HOTKEY_ID = 9001;
-        private const uint MOD_CTRL_SHIFT = Win32.MOD_CONTROL | Win32.MOD_SHIFT;
+        private IntPtr _kbHook;
+        private Win32.LowLevelKeyboardProc _kbProc;
+        private readonly HashSet<uint> _pressedKeys = new HashSet<uint>();
 
         public MainWindow()
         {
@@ -45,25 +48,49 @@ namespace PasteByDan
             source.AddHook(WndProc);
 
             Win32.AddClipboardFormatListener(_hwnd);
-            RegisterHotkey();
 
-            // Track last real foreground window continuously
+            _kbProc = KeyboardHookProc;
+            using (var proc = System.Diagnostics.Process.GetCurrentProcess())
+            using (var mod = proc.MainModule)
+                _kbHook = Win32.SetWindowsHookEx(Win32.WH_KEYBOARD_LL, _kbProc, Win32.GetModuleHandle(mod.ModuleName), 0);
+
             _winEventDelegate = new Win32.WinEventDelegate(OnForegroundChanged);
             _winEventHook = Win32.SetWinEventHook(
                 Win32.EVENT_SYSTEM_FOREGROUND, Win32.EVENT_SYSTEM_FOREGROUND,
                 IntPtr.Zero, _winEventDelegate, 0, 0, Win32.WINEVENT_OUTOFCONTEXT);
         }
 
-        private void RegisterHotkey()
+        private IntPtr KeyboardHookProc(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            Win32.UnregisterHotKey(_hwnd, HOTKEY_ID);
-            Win32.RegisterHotKey(_hwnd, HOTKEY_ID, Win32.MOD_CONTROL | Win32.MOD_SHIFT, 0x43); // Ctrl+Shift+C
+            if (nCode >= 0)
+            {
+                var kb = Marshal.PtrToStructure<Win32.KBDLLHOOKSTRUCT>(lParam);
+                int msg = wParam.ToInt32();
+                bool isDown = msg == Win32.WM_KEYDOWN || msg == Win32.WM_SYSKEYDOWN;
+                bool isUp   = msg == Win32.WM_KEYUP   || msg == Win32.WM_SYSKEYUP;
+
+                if (isDown) _pressedKeys.Add(kb.vkCode);
+                else if (isUp) _pressedKeys.Remove(kb.vkCode);
+
+                if (isDown && !_settingsOpen)
+                {
+                    var mods    = _vm.HotkeyModVKs;
+                    int trigger = _vm.HotkeyTriggerVK;
+                    bool modsOk = mods.Count > 0 && mods.TrueForAll(m => _pressedKeys.Contains((uint)m));
+                    if ((int)kb.vkCode == trigger && modsOk)
+                    {
+                        Dispatcher.InvokeAsync(ToggleWindow);
+                        return (IntPtr)1; // suppress key
+                    }
+                }
+            }
+            return Win32.CallNextHookEx(_kbHook, nCode, wParam, lParam);
         }
 
         protected override void OnClosed(EventArgs e)
         {
             Win32.RemoveClipboardFormatListener(_hwnd);
-            Win32.UnregisterHotKey(_hwnd, HOTKEY_ID);
+            if (_kbHook != IntPtr.Zero) Win32.UnhookWindowsHookEx(_kbHook);
             if (_winEventHook != IntPtr.Zero) Win32.UnhookWinEvent(_winEventHook);
             _trayIcon?.Dispose();
             base.OnClosed(e);
@@ -76,9 +103,10 @@ namespace PasteByDan
                 OnClipboardChanged();
                 handled = true;
             }
-            if (msg == (int)Win32.WM_HOTKEY && wParam.ToInt32() == HOTKEY_ID)
+            if (msg == 0x020E) // WM_MOUSEHWHEEL
             {
-                ToggleWindow();
+                int delta = (short)(wParam.ToInt64() >> 16);
+                CardsScroll.ScrollToHorizontalOffset(CardsScroll.HorizontalOffset + delta);
                 handled = true;
             }
             return IntPtr.Zero;
@@ -101,12 +129,8 @@ namespace PasteByDan
         private void OnForegroundChanged(IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
             int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
-            // Keep track of the last real foreground window (not ours)
             if (hwnd != IntPtr.Zero && hwnd != _hwnd)
-            {
                 _prevHwnd = hwnd;
-                Log($"FG changed: {hwnd.ToInt64():X}");
-            }
         }
 
         private void ToggleWindow()
@@ -117,7 +141,6 @@ namespace PasteByDan
             }
             else
             {
-                Log($"ToggleWindow show: prevHwnd={_prevHwnd.ToInt64():X}");
                 PositionWindow();
                 Show();
                 Activate();
@@ -127,11 +150,35 @@ namespace PasteByDan
 
         private void PositionWindow()
         {
+            // Get DPI transform from our window (may be null before first show — fallback to 1.0)
+            double m11 = 1.0, m22 = 1.0;
+            var src = PresentationSource.FromVisual(this);
+            if (src?.CompositionTarget != null)
+            {
+                m11 = src.CompositionTarget.TransformFromDevice.M11;
+                m22 = src.CompositionTarget.TransformFromDevice.M22;
+            }
+
+            if (_prevHwnd != IntPtr.Zero)
+            {
+                var hMon = Win32.MonitorFromWindow(_prevHwnd, Win32.MONITOR_DEFAULTTONEAREST);
+                var mi = new Win32.MONITORINFO { cbSize = (uint)Marshal.SizeOf(typeof(Win32.MONITORINFO)) };
+                if (Win32.GetMonitorInfo(hMon, ref mi))
+                {
+                    double w = (mi.rcWork.right  - mi.rcWork.left) * m11;
+                    double h = (mi.rcWork.bottom - mi.rcWork.top)  * m22 * 0.27;
+                    double l = mi.rcWork.left   * m11;
+                    double t = mi.rcWork.bottom * m22 - h;
+                    Width = w; Height = h; Left = l; Top = t;
+                    return;
+                }
+            }
+
             var wa = SystemParameters.WorkArea;
-            Width = wa.Width;
+            Width  = wa.Width;
             Height = wa.Height * 0.27;
-            Left = wa.Left;
-            Top = wa.Bottom - Height;
+            Left   = wa.Left;
+            Top    = wa.Bottom - Height;
         }
 
         private void SetupTray()
@@ -182,17 +229,6 @@ namespace PasteByDan
             }
         }
 
-        private static void Log(string msg)
-        {
-            try
-            {
-                var path = System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "paste_debug.txt");
-                System.IO.File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
-            }
-            catch { }
-        }
-
         private void PasteItem(ClipboardItem item)
         {
             if (item == null) return;
@@ -201,18 +237,11 @@ namespace PasteByDan
             // Calling it again causes a race: EmptyClipboard removes CF_EXCLUDE right as
             // Windows Clipboard History checks the notification from write #1 → chw shows.
             var hwnd = _prevHwnd;
-            Log($"PasteItem: prevHwnd={hwnd.ToInt64():X}, myHwnd={_hwnd.ToInt64():X}");
 
-            // Transfer focus to target BEFORE hiding — we still have foreground rights now
             if (hwnd != IntPtr.Zero && hwnd != _hwnd)
             {
                 if (Win32.IsIconic(hwnd)) Win32.ShowWindow(hwnd, 9); // SW_RESTORE only if minimized
-                bool r = Win32.SetForegroundWindow(hwnd);
-                Log($"SetForegroundWindow={r}");
-            }
-            else
-            {
-                Log("prevHwnd is zero or same as our window — skip SetForegroundWindow");
+                Win32.SetForegroundWindow(hwnd);
             }
 
             Hide();
@@ -224,20 +253,18 @@ namespace PasteByDan
             timer.Tick += (s, e) =>
             {
                 timer.Stop();
-                var fg = Win32.GetForegroundWindow();
-                try
-                {
-                    var clipText = System.Windows.Clipboard.GetText();
-                    Log($"Clipboard at paste: '{(clipText?.Length > 40 ? clipText.Substring(0, 40) : clipText)}'");
-                }
-                catch (Exception ex2) { Log($"Clipboard read error: {ex2.Message}"); }
-                Log($"Timer fired: fg={fg.ToInt64():X}");
                 PasteService.SendCtrlV();
             };
             timer.Start();
         }
 
         // ----- Window events -----
+
+        private void CardsScroll_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            CardsScroll.ScrollToHorizontalOffset(CardsScroll.HorizontalOffset - e.Delta);
+            e.Handled = true;
+        }
 
         private void Window_Deactivated(object sender, EventArgs e)
         {
