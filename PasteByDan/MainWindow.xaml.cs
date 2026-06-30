@@ -57,7 +57,7 @@ namespace PasteByDan
         private void RegisterHotkey()
         {
             Win32.UnregisterHotKey(_hwnd, HOTKEY_ID);
-            Win32.RegisterHotKey(_hwnd, HOTKEY_ID, Win32.MOD_CONTROL | Win32.MOD_SHIFT, 0x56);
+            Win32.RegisterHotKey(_hwnd, HOTKEY_ID, Win32.MOD_CONTROL | Win32.MOD_SHIFT, 0x43); // Ctrl+Shift+C
         }
 
         protected override void OnClosed(EventArgs e)
@@ -139,8 +139,9 @@ namespace PasteByDan
             _trayIcon = new NotifyIcon();
             try
             {
-                _trayIcon.Icon = new System.Drawing.Icon(
-                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "tray.ico"));
+                var stream = System.Windows.Application.GetResourceStream(
+                    new Uri("pack://application:,,,/Assets/tray.ico")).Stream;
+                _trayIcon.Icon = new System.Drawing.Icon(stream);
             }
             catch
             {
