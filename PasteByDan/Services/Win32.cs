@@ -133,6 +133,31 @@ namespace PasteByDan.Services
             public uint biClrImportant;
         }
 
+        [DllImport("user32.dll")]
+        public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT { public int left, top, right, bottom; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct GUITHREADINFO
+        {
+            public uint cbSize;
+            public uint flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public RECT rcCaret;
+        }
+
+        public const uint WM_PASTE = 0x0302;
+
         // WinEvent hook for foreground tracking
         public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
             int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);

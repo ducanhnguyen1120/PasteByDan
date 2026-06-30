@@ -25,7 +25,34 @@ namespace PasteByDan.Services
             catch { }
         }
 
-        // Call after delay — sends Ctrl+V to whatever is in foreground
+        private static void Log(string msg)
+        {
+            try
+            {
+                var path = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "paste_debug.txt");
+                System.IO.File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
+            }
+            catch { }
+        }
+
+        // Send WM_PASTE directly to the focused child of target window (no focus needed)
+        public static void WmPasteTo(IntPtr targetWindow)
+        {
+            try
+            {
+                uint tid = Win32.GetWindowThreadProcessId(targetWindow, out _);
+                var gui = new Win32.GUITHREADINFO { cbSize = (uint)Marshal.SizeOf(typeof(Win32.GUITHREADINFO)) };
+                Win32.GetGUIThreadInfo(tid, ref gui);
+
+                IntPtr dest = (gui.hwndFocus != IntPtr.Zero) ? gui.hwndFocus : targetWindow;
+                Log($"WM_PASTE → dest={dest.ToInt64():X} (focus={gui.hwndFocus.ToInt64():X})");
+                Win32.PostMessage(dest, Win32.WM_PASTE, IntPtr.Zero, IntPtr.Zero);
+            }
+            catch (Exception ex) { Log($"WmPasteTo error: {ex.Message}"); }
+        }
+
+        // Fallback: inject Ctrl+V via SendInput
         public static void SendCtrlV()
         {
             try
@@ -33,24 +60,26 @@ namespace PasteByDan.Services
                 var inputs = new Win32.INPUT[4];
 
                 inputs[0].Type = Win32.INPUT_KEYBOARD;
-                inputs[0].U.ki.wVk = 0x11; // VK_CONTROL down
+                inputs[0].U.ki.wVk = 0x11;
                 inputs[0].U.ki.dwFlags = 0;
 
                 inputs[1].Type = Win32.INPUT_KEYBOARD;
-                inputs[1].U.ki.wVk = 0x56; // V down
+                inputs[1].U.ki.wVk = 0x56;
                 inputs[1].U.ki.dwFlags = 0;
 
                 inputs[2].Type = Win32.INPUT_KEYBOARD;
-                inputs[2].U.ki.wVk = 0x56; // V up
+                inputs[2].U.ki.wVk = 0x56;
                 inputs[2].U.ki.dwFlags = Win32.KEYEVENTF_KEYUP;
 
                 inputs[3].Type = Win32.INPUT_KEYBOARD;
-                inputs[3].U.ki.wVk = 0x11; // VK_CONTROL up
+                inputs[3].U.ki.wVk = 0x11;
                 inputs[3].U.ki.dwFlags = Win32.KEYEVENTF_KEYUP;
 
-                Win32.SendInput(4, inputs, Marshal.SizeOf(typeof(Win32.INPUT)));
+                int inputSize = Marshal.SizeOf(typeof(Win32.INPUT));
+                uint sent = Win32.SendInput(4, inputs, inputSize);
+                Log($"SendInput: size={inputSize}, sent={sent}");
             }
-            catch { }
+            catch (Exception ex) { Log($"SendCtrlV error: {ex.Message}"); }
         }
     }
 }

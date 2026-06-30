@@ -221,7 +221,10 @@ namespace PasteByDan
             {
                 timer.Stop();
                 var fg = Win32.GetForegroundWindow();
-                Log($"Timer fired: fg={fg.ToInt64():X}, sending Ctrl+V");
+                Log($"Timer fired: fg={fg.ToInt64():X}");
+                // Try WM_PASTE direct (works for standard controls without focus)
+                PasteService.WmPasteTo(hwnd);
+                // Also inject Ctrl+V via SendInput
                 PasteService.SendCtrlV();
             };
             timer.Start();
