@@ -4,6 +4,7 @@
         xmlns:conv="clr-namespace:PasteByDan.Converters"
         xmlns:models="clr-namespace:PasteByDan.Models"
         Title="Paste by Dan"
+        Icon="Assets/app.ico"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"

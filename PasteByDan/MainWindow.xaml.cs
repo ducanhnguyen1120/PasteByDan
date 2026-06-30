@@ -195,6 +195,7 @@ namespace PasteByDan
         private void PasteItem(ClipboardItem item)
         {
             if (item == null) return;
+            _vm.BringToTop(item); // move to top of history
             // Do NOT call CopyItem again — ClickCount=1 already wrote clipboard before ClickCount=2 fires.
             // Calling it again causes a race: EmptyClipboard removes CF_EXCLUDE right as
             // Windows Clipboard History checks the notification from write #1 → chw shows.

@@ -89,6 +89,13 @@ namespace PasteByDan.ViewModels
             SaveData();
         }
 
+        public void BringToTop(ClipboardItem item)
+        {
+            item.Timestamp = DateTime.Now;
+            RefreshFilter();
+            SaveData();
+        }
+
         public void TogglePin(ClipboardItem item)
         {
             item.IsPinned = !item.IsPinned;
