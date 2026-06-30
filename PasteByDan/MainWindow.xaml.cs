@@ -98,6 +98,7 @@ namespace PasteByDan
             else
             {
                 _prevHwnd = Win32.GetForegroundWindow();
+                Log($"ToggleWindow show: prevHwnd={_prevHwnd.ToInt64():X}");
                 PositionWindow();
                 Show();
                 Activate();
@@ -161,19 +162,47 @@ namespace PasteByDan
             }
         }
 
+        private static void Log(string msg)
+        {
+            try
+            {
+                var path = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "paste_debug.txt");
+                System.IO.File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
+            }
+            catch { }
+        }
+
         private void PasteItem(ClipboardItem item)
         {
             if (item == null) return;
             CopyItem(item);
+            var hwnd = _prevHwnd;
+            Log($"PasteItem: prevHwnd={hwnd.ToInt64():X}, myHwnd={_hwnd.ToInt64():X}");
+
+            // Transfer focus to target BEFORE hiding — we still have foreground rights now
+            if (hwnd != IntPtr.Zero && hwnd != _hwnd)
+            {
+                Win32.ShowWindow(hwnd, 9); // SW_RESTORE if minimized
+                bool r = Win32.SetForegroundWindow(hwnd);
+                Log($"SetForegroundWindow={r}");
+            }
+            else
+            {
+                Log("prevHwnd is zero or same as our window — skip SetForegroundWindow");
+            }
+
             Hide();
-            // Let Windows restore focus naturally after Hide(), then send Ctrl+V
+
             var timer = new System.Windows.Threading.DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(350)
+                Interval = TimeSpan.FromMilliseconds(300)
             };
             timer.Tick += (s, e) =>
             {
                 timer.Stop();
+                var fg = Win32.GetForegroundWindow();
+                Log($"Timer fired: fg={fg.ToInt64():X}, sending Ctrl+V");
                 PasteService.SendCtrlV();
             };
             timer.Start();

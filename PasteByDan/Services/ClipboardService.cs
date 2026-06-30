@@ -49,18 +49,32 @@ namespace PasteByDan.Services
             return null;
         }
 
+        private static void Log(string msg)
+        {
+            try
+            {
+                var path = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "paste_debug.txt");
+                System.IO.File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
+            }
+            catch { }
+        }
+
         public static void WriteTextSuppressed(string text, IntPtr hwnd)
         {
             try
             {
+                Log($"WriteText: CF_EXCLUDE={CF_EXCLUDE}, ignoreNext={_ignoreNext}");
                 SetIgnoreNext(true);
                 var data = new System.Windows.DataObject();
                 data.SetText(text);
                 data.SetData("ExcludeClipboardContentFromMonitorProcessing", new byte[1]);
                 System.Windows.Clipboard.SetDataObject(data, copy: true);
+                Log("WriteText: SetDataObject done");
             }
-            catch
+            catch (Exception ex)
             {
+                Log($"WriteText FAILED: {ex.Message}");
                 SetIgnoreNext(false);
             }
         }
