@@ -3,5 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
+        <!-- Dark theme (default) -->
+        <SolidColorBrush x:Key="BgBrush"       Color="#CC141414"/>
+        <SolidColorBrush x:Key="CardBg"         Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="CardBorder"     Color="#333333"/>
+        <SolidColorBrush x:Key="CardHover"      Color="#2A2A2A"/>
+        <SolidColorBrush x:Key="AccentBrush"    Color="#5B8AF5"/>
+        <SolidColorBrush x:Key="TextPrimary"    Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary"  Color="#888888"/>
+        <SolidColorBrush x:Key="SearchBg"       Color="#2A2A2A"/>
+        <SolidColorBrush x:Key="TitleBarBg"     Color="#181818"/>
+        <SolidColorBrush x:Key="CardsAreaBg"    Color="#0D0D0D"/>
+        <SolidColorBrush x:Key="SearchFg"       Color="#FFFFFF"/>
     </Application.Resources>
 </Application>

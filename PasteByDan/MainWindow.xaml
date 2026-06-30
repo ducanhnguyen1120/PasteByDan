@@ -16,23 +16,9 @@
         <conv:TypeToColorConverter x:Key="TypeToColor"/>
         <conv:TypeToLabelConverter x:Key="TypeToLabel"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
-        <conv:NullToVisibilityConverter x:Key="NullToVis"/>
         <conv:Base64ToImageConverter x:Key="Base64ToImage"/>
         <conv:PinIconConverter x:Key="PinIcon"/>
 
-        <!-- Colors -->
-        <SolidColorBrush x:Key="BgBrush" Color="#CC141414"/>
-        <SolidColorBrush x:Key="CardBg" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="CardBorder" Color="#333333"/>
-        <SolidColorBrush x:Key="AccentBrush" Color="#5B8AF5"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#888888"/>
-        <SolidColorBrush x:Key="SidebarBg" Color="#0F0F0F"/>
-        <SolidColorBrush x:Key="SearchBg" Color="#2A2A2A"/>
-        <SolidColorBrush x:Key="HoverBg" Color="#2A2A2A"/>
-        <SolidColorBrush x:Key="TitleBarBg" Color="#181818"/>
-
-        <!-- Card button style -->
         <Style x:Key="CardBtn" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#888888"/>
@@ -57,10 +43,9 @@
             </Setter>
         </Style>
 
-        <!-- Tab button style -->
         <Style x:Key="TabBtn" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#888888"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="14,6"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -78,7 +63,7 @@
                                 <Setter Property="Foreground" Value="#FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -86,37 +71,6 @@
             </Setter>
         </Style>
 
-        <!-- Sidebar group item style -->
-        <Style x:Key="GroupItem" TargetType="ListBoxItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#BBBBBB"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,7"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Margin="4,2"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#1E2A4A"/>
-                                <Setter Property="Foreground" Value="#5B8AF5"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#222222"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Scrollbar style (thin, dark) -->
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Width" Value="6"/>
@@ -146,292 +100,208 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
 
-    <!-- Main container with blur background -->
-    <Border Background="{StaticResource BgBrush}" CornerRadius="12,12,0,0"
+    <Border Background="{DynamicResource BgBrush}" CornerRadius="12,12,0,0"
             BorderBrush="#333333" BorderThickness="1,1,1,0">
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <!-- SIDEBAR -->
-            <Border Grid.Column="0" Background="{StaticResource SidebarBg}"
-                    CornerRadius="12,0,0,0" BorderBrush="#222222" BorderThickness="0,0,1,0">
+            <!-- Title bar -->
+            <Border Grid.Row="0" Background="{DynamicResource TitleBarBg}"
+                    CornerRadius="12,12,0,0" Padding="12,10">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- App title -->
-                    <StackPanel Grid.Row="0" Margin="14,16,14,8">
-                        <TextBlock Text="📋 Paste by Dan" Foreground="#5B8AF5"
-                                   FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="15"/>
-                        <TextBlock x:Name="TbItemCount" Text="0 items" Foreground="#555555"
-                                   FontFamily="Segoe UI" FontSize="11" Margin="0,2,0,0"/>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton x:Name="TabAll" Content="All" Style="{StaticResource TabBtn}"
+                                      IsChecked="True" Click="Tab_Click" Tag="All"/>
+                        <ToggleButton x:Name="TabPinned" Content="📌 Pinned" Style="{StaticResource TabBtn}"
+                                      Margin="4,0,0,0" Click="Tab_Click" Tag="Pinned"/>
                     </StackPanel>
 
-                    <!-- Groups list -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="6,0">
-                            <TextBlock Text="COLLECTIONS" Foreground="#444444"
-                                       FontFamily="Segoe UI" FontSize="10" FontWeight="Bold"
-                                       Margin="10,8,0,4"/>
-                            <ListBox x:Name="GroupsList" Background="Transparent"
-                                     BorderThickness="0" ItemContainerStyle="{StaticResource GroupItem}"
-                                     SelectionChanged="GroupsList_SelectionChanged">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Name}"
-                                                       VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Content="×" Style="{StaticResource CardBtn}"
-                                                    Foreground="#555" FontSize="14" Padding="4,0"
-                                                    Click="DeleteGroup_Click" Tag="{Binding}"
-                                                    Visibility="Hidden" x:Name="DelBtn"/>
-                                        </Grid>
-                                        <DataTemplate.Triggers>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
-                                                <Setter TargetName="DelBtn" Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </DataTemplate.Triggers>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- Bottom sidebar actions -->
-                    <StackPanel Grid.Row="2" Margin="10,8">
-                        <Button Content="+ New Collection" Style="{StaticResource CardBtn}"
-                                Foreground="#5B8AF5" FontSize="12" HorizontalAlignment="Left"
-                                Padding="8,6" Click="NewGroup_Click"/>
-                        <Button Content="⚙ Settings" Style="{StaticResource CardBtn}"
-                                Foreground="#666" FontSize="12" HorizontalAlignment="Left"
-                                Padding="8,6" Margin="0,2,0,0" Click="Settings_Click"/>
-                        <Button Content="🗑 Clear All" Style="{StaticResource CardBtn}"
-                                Foreground="#666" FontSize="12" HorizontalAlignment="Left"
-                                Padding="8,6" Margin="0,2,0,4" Click="ClearAll_Click"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="ThemeBtn" Content="🌙" Style="{StaticResource CardBtn}"
+                                FontSize="16" Padding="8,4" Click="Theme_Click" ToolTip="Toggle theme"/>
+                        <Button Content="🗑" Style="{StaticResource CardBtn}"
+                                FontSize="14" Padding="8,4" Margin="2,0" Click="ClearAll_Click"
+                                ToolTip="Clear all unpinned items"/>
+                        <Button Content="⚙" Style="{StaticResource CardBtn}"
+                                FontSize="14" Padding="8,4" Margin="2,0" Click="Settings_Click"
+                                ToolTip="Settings"/>
+                        <Button Content="✕" Style="{StaticResource CardBtn}"
+                                FontSize="14" Padding="8,4" Margin="4,0,0,0"
+                                Click="CloseBtn_Click" ToolTip="Hide"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- MAIN AREA -->
-            <Grid Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Title bar / Tab bar -->
-                <Border Grid.Row="0" Background="{StaticResource TitleBarBg}"
-                        CornerRadius="0,12,0,0" Padding="12,10">
+            <!-- Search bar -->
+            <Border Grid.Row="1" Background="{DynamicResource TitleBarBg}" Padding="12,0,12,10">
+                <Border Background="{DynamicResource SearchBg}" CornerRadius="8" Padding="10,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <ToggleButton x:Name="TabAll" Content="All" Style="{StaticResource TabBtn}"
-                                          IsChecked="True" Click="Tab_Click" Tag="All"/>
-                            <ToggleButton x:Name="TabPinned" Content="📌 Pinned" Style="{StaticResource TabBtn}"
-                                          Margin="4,0,0,0" Click="Tab_Click" Tag="Pinned"/>
-                            <ToggleButton x:Name="TabCollections" Content="📁 Collections" Style="{StaticResource TabBtn}"
-                                          Margin="4,0,0,0" Click="Tab_Click" Tag="Collections"/>
-                        </StackPanel>
-
-                        <!-- Theme + Close -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button x:Name="ThemeBtn" Content="🌙" Style="{StaticResource CardBtn}"
-                                    FontSize="16" Padding="8,4" Click="Theme_Click" ToolTip="Toggle theme"/>
-                            <Button Content="✕" Style="{StaticResource CardBtn}"
-                                    FontSize="14" Padding="8,4" Margin="4,0,0,0"
-                                    Click="CloseBtn_Click" ToolTip="Hide (hotkey to reopen)"/>
-                        </StackPanel>
+                        <TextBlock Grid.Column="0" Text="🔍" VerticalAlignment="Center"
+                                   Foreground="#555" Margin="0,0,6,0" FontSize="13"/>
+                        <TextBox Grid.Column="1" x:Name="SearchBox"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource SearchFg}"
+                                 BorderThickness="0" FontFamily="Segoe UI" FontSize="13"
+                                 Padding="0,8" CaretBrush="#5B8AF5"
+                                 TextChanged="SearchBox_TextChanged">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Style.Resources>
+                                        <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                            <VisualBrush.Visual>
+                                                <Label Content="Search clipboard history..." Foreground="#666"
+                                                       FontFamily="Segoe UI" FontSize="13"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Style.Resources>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
                     </Grid>
                 </Border>
+            </Border>
 
-                <!-- Search bar -->
-                <Border Grid.Row="1" Background="{StaticResource TitleBarBg}" Padding="12,0,12,10">
-                    <Border Background="{StaticResource SearchBg}" CornerRadius="8" Padding="10,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="🔍" VerticalAlignment="Center"
-                                       Foreground="#555" Margin="0,0,6,0" FontSize="13"/>
-                            <TextBox Grid.Column="1" x:Name="SearchBox"
-                                     Background="Transparent" Foreground="#FFFFFF"
-                                     BorderThickness="0" FontFamily="Segoe UI" FontSize="13"
-                                     Padding="0,8" CaretBrush="#5B8AF5"
-                                     TextChanged="SearchBox_TextChanged">
-                                <TextBox.Style>
-                                    <Style TargetType="TextBox">
-                                        <Style.Resources>
-                                            <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
-                                                <VisualBrush.Visual>
-                                                    <Label Content="Search clipboard history..." Foreground="#444444"
-                                                           FontFamily="Segoe UI" FontSize="13"/>
-                                                </VisualBrush.Visual>
-                                            </VisualBrush>
-                                        </Style.Resources>
-                                        <Style.Triggers>
-                                            <Trigger Property="Text" Value="">
-                                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBox.Style>
-                            </TextBox>
-                        </Grid>
-                    </Border>
-                </Border>
+            <!-- Cards -->
+            <Border Grid.Row="2" Background="{DynamicResource CardsAreaBg}">
+                <ScrollViewer x:Name="CardsScroll"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="CardsList" ItemsSource="{Binding FilteredItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="10,8"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="CardBorder"
+                                        Width="170" Margin="0,0,8,0"
+                                        Background="{DynamicResource CardBg}"
+                                        BorderBrush="{DynamicResource CardBorder}"
+                                        BorderThickness="1" CornerRadius="8"
+                                        Cursor="Hand">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick"
+                                                      Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                        <MouseBinding MouseAction="LeftDoubleClick"
+                                                      Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                    </Border.InputBindings>
+                                    <Border.ContextMenu>
+                                        <ContextMenu Tag="{Binding}">
+                                            <MenuItem Header="Copy" Click="CtxCopy_Click" Tag="{Binding}"/>
+                                            <MenuItem Header="Paste" Click="CtxPaste_Click" Tag="{Binding}"/>
+                                            <Separator/>
+                                            <MenuItem Header="Pin / Unpin" Click="CtxPin_Click" Tag="{Binding}"/>
+                                            <Separator/>
+                                            <MenuItem Header="Delete" Click="CtxDelete_Click" Tag="{Binding}" Foreground="#FF5555"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
 
-                <!-- Cards area -->
-                <Border Grid.Row="2" Background="#0D0D0D">
-                    <ScrollViewer x:Name="CardsScroll"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled">
-                        <ItemsControl x:Name="CardsList" ItemsSource="{Binding FilteredItems}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="10,8"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="CardBorder"
-                                            Width="170" Margin="0,0,8,0"
-                                            Background="{StaticResource CardBg}"
-                                            BorderBrush="{StaticResource CardBorder}"
-                                            BorderThickness="1" CornerRadius="8"
-                                            Cursor="Hand">
-                                        <Border.InputBindings>
-                                            <MouseBinding MouseAction="LeftClick"
-                                                          Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                          CommandParameter="{Binding}"/>
-                                            <MouseBinding MouseAction="LeftDoubleClick"
-                                                          Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                          CommandParameter="{Binding}"/>
-                                        </Border.InputBindings>
-                                        <Border.ContextMenu>
-                                            <ContextMenu x:Name="CardMenu" Tag="{Binding}">
-                                                <MenuItem Header="Copy" Click="CtxCopy_Click" Tag="{Binding}"/>
-                                                <MenuItem Header="Paste" Click="CtxPaste_Click" Tag="{Binding}"/>
-                                                <Separator/>
-                                                <MenuItem Header="Pin / Unpin" Click="CtxPin_Click" Tag="{Binding}"/>
-                                                <MenuItem Header="Move to Collection ▶" x:Name="MoveToMenu" Tag="{Binding}"/>
-                                                <Separator/>
-                                                <MenuItem Header="Delete" Click="CtxDelete_Click" Tag="{Binding}" Foreground="#FF5555"/>
-                                            </ContextMenu>
-                                        </Border.ContextMenu>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-
-                                            <!-- Type badge + pin -->
-                                            <Grid Grid.Row="0" Margin="8,8,8,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Border Grid.Column="0" CornerRadius="4" Padding="5,2"
-                                                        Background="{Binding Type, Converter={StaticResource TypeToColor}}">
-                                                    <TextBlock Text="{Binding Type, Converter={StaticResource TypeToLabel}}"
-                                                               Foreground="White" FontSize="9" FontWeight="Bold"
-                                                               FontFamily="Segoe UI"/>
-                                                </Border>
-                                                <TextBlock Grid.Column="2" FontSize="11"
-                                                           Text="{Binding IsPinned, Converter={StaticResource PinIcon}}"
-                                                           Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
-                                                           VerticalAlignment="Center"/>
-                                            </Grid>
-
-                                            <!-- Content preview -->
-                                            <Grid Grid.Row="1" Margin="8,2">
-                                                <!-- Text preview -->
-                                                <!-- Text preview (hidden for images via DataTrigger) -->
-                                                <TextBlock Text="{Binding Preview}"
-                                                           Foreground="{StaticResource TextPrimary}"
-                                                           FontFamily="Segoe UI" FontSize="12"
-                                                           TextWrapping="Wrap" MaxHeight="60"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           x:Name="PreviewText"/>
-                                                <!-- Image preview -->
-                                                <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImage}}"
-                                                       MaxHeight="70" Stretch="Uniform"
-                                                       x:Name="PreviewImage" Visibility="Collapsed"/>
-                                            </Grid>
-
-                                            <!-- Footer: timestamp + hover actions -->
-                                            <Grid Grid.Row="2" Margin="8,4,8,8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding TimeAgo}"
-                                                           Foreground="{StaticResource TextSecondary}"
-                                                           FontSize="10" FontFamily="Segoe UI"
-                                                           VerticalAlignment="Center"/>
-                                                <!-- Hover actions -->
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                            x:Name="HoverActions" Visibility="Collapsed">
-                                                    <Button Style="{StaticResource CardBtn}" Content="📌"
-                                                            FontSize="11" Padding="4,2"
-                                                            Click="CardPin_Click" Tag="{Binding}"/>
-                                                    <Button Style="{StaticResource CardBtn}" Content="🗑"
-                                                            FontSize="11" Padding="4,2"
-                                                            Click="CardDelete_Click" Tag="{Binding}"/>
-                                                </StackPanel>
-                                            </Grid>
+                                        <Grid Grid.Row="0" Margin="8,8,8,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" CornerRadius="4" Padding="5,2"
+                                                    Background="{Binding Type, Converter={StaticResource TypeToColor}}">
+                                                <TextBlock Text="{Binding Type, Converter={StaticResource TypeToLabel}}"
+                                                           Foreground="White" FontSize="9" FontWeight="Bold"
+                                                           FontFamily="Segoe UI"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="2" FontSize="11"
+                                                       Text="{Binding IsPinned, Converter={StaticResource PinIcon}}"
+                                                       Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
+                                                       VerticalAlignment="Center"/>
                                         </Grid>
 
-                                        <Border.Triggers>
-                                            <EventTrigger RoutedEvent="MouseEnter"/>
-                                        </Border.Triggers>
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource HoverBg}"/>
-                                                        <Setter Property="BorderBrush" Value="#5B8AF5"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                    </Border>
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding Type}" Value="{x:Static models:ClipType.Image}">
-                                            <Setter TargetName="PreviewText" Property="Visibility" Value="Collapsed"/>
-                                            <Setter TargetName="PreviewImage" Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
-                                            <Setter TargetName="HoverActions" Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Border>
-            </Grid>
+                                        <Grid Grid.Row="1" Margin="8,2">
+                                            <TextBlock Text="{Binding Preview}"
+                                                       Foreground="{DynamicResource TextPrimary}"
+                                                       FontFamily="Segoe UI" FontSize="12"
+                                                       TextWrapping="Wrap" MaxHeight="60"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       x:Name="PreviewText"/>
+                                            <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImage}}"
+                                                   MaxHeight="70" Stretch="Uniform"
+                                                   x:Name="PreviewImage" Visibility="Collapsed"/>
+                                        </Grid>
+
+                                        <Grid Grid.Row="2" Margin="8,4,8,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding TimeAgo}"
+                                                       Foreground="{DynamicResource TextSecondary}"
+                                                       FontSize="10" FontFamily="Segoe UI"
+                                                       VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                        x:Name="HoverActions" Visibility="Collapsed">
+                                                <Button Style="{StaticResource CardBtn}" Content="📌"
+                                                        FontSize="11" Padding="4,2"
+                                                        Click="CardPin_Click" Tag="{Binding}"/>
+                                                <Button Style="{StaticResource CardBtn}" Content="🗑"
+                                                        FontSize="11" Padding="4,2"
+                                                        Click="CardDelete_Click" Tag="{Binding}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource CardHover}"/>
+                                                    <Setter Property="BorderBrush" Value="#5B8AF5"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Type}" Value="{x:Static models:ClipType.Image}">
+                                        <Setter TargetName="PreviewText" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="PreviewImage" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=IsMouseOver}" Value="True">
+                                        <Setter TargetName="HoverActions" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
         </Grid>
     </Border>
 </Window>

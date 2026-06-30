@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Forms;
 using PasteByDan.Models;
 using PasteByDan.Services;
@@ -20,11 +19,11 @@ namespace PasteByDan
         private IntPtr _prevHwnd;
         private NotifyIcon _trayIcon;
         private bool _settingsOpen = false;
+        private bool _isDark = true;
 
         private const int HOTKEY_ID = 9001;
         private const uint MOD_CTRL_SHIFT = Win32.MOD_CONTROL | Win32.MOD_SHIFT;
 
-        // Commands exposed to XAML bindings
         public ICommand CopyCommand { get; }
         public ICommand PasteCommand { get; }
 
@@ -37,24 +36,8 @@ namespace PasteByDan
             CopyCommand = new RelayCommand<ClipboardItem>(CopyItem);
             PasteCommand = new RelayCommand<ClipboardItem>(PasteItem);
 
-            // Bind commands back to DataContext so XAML binding works
-            _vm.GetType().GetProperty("CopyCommand")?.SetValue(_vm, null); // not on VM, on window
-
-            // Position window at bottom of screen
             PositionWindow();
             SetupTray();
-
-            GroupsList.ItemsSource = _vm.Groups;
-            UpdateItemCount();
-            _vm.FilteredItems.CollectionChanged += (s, e) => UpdateItemCount();
-        }
-
-        private void UpdateItemCount()
-        {
-            Dispatcher.InvokeAsync(() =>
-            {
-                TbItemCount.Text = $"{_vm.FilteredItems.Count} items";
-            });
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -65,7 +48,13 @@ namespace PasteByDan
             source.AddHook(WndProc);
 
             Win32.AddClipboardFormatListener(_hwnd);
-            Win32.RegisterHotKey(_hwnd, HOTKEY_ID, MOD_CTRL_SHIFT, 0x56); // Ctrl+Shift+V
+            RegisterHotkey();
+        }
+
+        private void RegisterHotkey()
+        {
+            Win32.UnregisterHotKey(_hwnd, HOTKEY_ID);
+            Win32.RegisterHotKey(_hwnd, HOTKEY_ID, Win32.MOD_CONTROL | Win32.MOD_SHIFT, 0x56);
         }
 
         protected override void OnClosed(EventArgs e)
@@ -94,7 +83,6 @@ namespace PasteByDan
         private void OnClipboardChanged()
         {
             if (ClipboardService.ConsumeIgnoreNext()) return;
-
             Dispatcher.InvokeAsync(() =>
             {
                 try
@@ -148,7 +136,7 @@ namespace PasteByDan
 
             _trayIcon.MouseClick += (s, e) =>
             {
-                if (e.Button == MouseButtons.Left) ToggleWindow();
+                if (e.Button == MouseButtons.Left) Dispatcher.Invoke(ToggleWindow);
             };
 
             var cm = new ContextMenuStrip();
@@ -183,8 +171,10 @@ namespace PasteByDan
             if (item == null) return;
             CopyItem(item);
             Hide();
-            await Task.Delay(150);
-            PasteService.PasteToWindow(_prevHwnd);
+            // Focus previous window from UI thread — has message loop so AttachThreadInput works
+            PasteService.FocusWindow(_prevHwnd);
+            await Task.Delay(200);
+            PasteService.SendCtrlV();
         }
 
         // ----- Window events -----
@@ -196,17 +186,15 @@ namespace PasteByDan
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e) => Hide();
 
-        // ----- Tab switching -----
+        // ----- Tabs -----
 
         private void Tab_Click(object sender, RoutedEventArgs e)
         {
             var btn = (System.Windows.Controls.Primitives.ToggleButton)sender;
             TabAll.IsChecked = false;
             TabPinned.IsChecked = false;
-            TabCollections.IsChecked = false;
             btn.IsChecked = true;
             _vm.ActiveTab = btn.Tag as string;
-            GroupsList.SelectedItem = null;
         }
 
         // ----- Search -----
@@ -214,42 +202,6 @@ namespace PasteByDan
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _vm.SearchText = SearchBox.Text;
-        }
-
-        // ----- Groups sidebar -----
-
-        private void GroupsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (GroupsList.SelectedItem is ClipGroup g)
-            {
-                _vm.ActiveGroupId = g.Id;
-                TabAll.IsChecked = false;
-                TabPinned.IsChecked = false;
-                TabCollections.IsChecked = true;
-            }
-        }
-
-        private void NewGroup_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new InputDialog("New Collection", "Enter collection name:");
-            _settingsOpen = true;
-            if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.Result))
-            {
-                _vm.AddGroup(dlg.Result.Trim());
-            }
-            _settingsOpen = false;
-        }
-
-        private void DeleteGroup_Click(object sender, RoutedEventArgs e)
-        {
-            var btn = (System.Windows.Controls.Button)sender;
-            if (btn.Tag is ClipGroup g)
-            {
-                var r = System.Windows.MessageBox.Show(
-                    $"Delete collection '{g.Name}'? Items will be unassigned.",
-                    "Paste by Dan", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (r == MessageBoxResult.Yes) _vm.DeleteGroup(g);
-            }
         }
 
         // ----- Card buttons -----
@@ -292,14 +244,47 @@ namespace PasteByDan
                 _vm.DeleteItem(item);
         }
 
-        // ----- Settings / Theme -----
+        // ----- Theme -----
 
         private void Theme_Click(object sender, RoutedEventArgs e)
         {
-            _vm.IsDarkTheme = !_vm.IsDarkTheme;
-            ThemeBtn.Content = _vm.IsDarkTheme ? "🌙" : "☀";
-            // Simple theme toggle — could expand with resource dictionary swap
+            _isDark = !_isDark;
+            ThemeBtn.Content = _isDark ? "🌙" : "☀";
+            ApplyTheme(_isDark);
         }
+
+        private void ApplyTheme(bool dark)
+        {
+            var res = System.Windows.Application.Current.Resources;
+            if (dark)
+            {
+                res["BgBrush"]      = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CC141414"));
+                res["CardBg"]       = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E1E1E"));
+                res["CardBorder"]   = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#333333"));
+                res["CardHover"]    = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A2A2A"));
+                res["TextPrimary"]  = new SolidColorBrush(Colors.White);
+                res["TextSecondary"]= new SolidColorBrush((Color)ColorConverter.ConvertFromString("#888888"));
+                res["SearchBg"]     = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A2A2A"));
+                res["TitleBarBg"]   = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#181818"));
+                res["CardsAreaBg"]  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0D0D0D"));
+                res["SearchFg"]     = new SolidColorBrush(Colors.White);
+            }
+            else
+            {
+                res["BgBrush"]      = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F0F0F0"));
+                res["CardBg"]       = new SolidColorBrush(Colors.White);
+                res["CardBorder"]   = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DDDDDD"));
+                res["CardHover"]    = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                res["TextPrimary"]  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#111111"));
+                res["TextSecondary"]= new SolidColorBrush((Color)ColorConverter.ConvertFromString("#888888"));
+                res["SearchBg"]     = new SolidColorBrush(Colors.White);
+                res["TitleBarBg"]   = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E8E8E8"));
+                res["CardsAreaBg"]  = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F5F5F5"));
+                res["SearchFg"]     = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#111111"));
+            }
+        }
+
+        // ----- Settings / Clear -----
 
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
@@ -318,8 +303,6 @@ namespace PasteByDan
             if (r == MessageBoxResult.Yes) _vm.ClearAll();
         }
     }
-
-    // ----- Simple RelayCommand -----
 
     public class RelayCommand<T> : ICommand
     {

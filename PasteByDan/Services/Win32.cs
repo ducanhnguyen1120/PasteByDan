@@ -48,6 +48,9 @@ namespace PasteByDan.Services
         public static extern bool BringWindowToTop(IntPtr hWnd);
 
         [DllImport("user32.dll")]
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
         public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
 
         [DllImport("user32.dll")]
