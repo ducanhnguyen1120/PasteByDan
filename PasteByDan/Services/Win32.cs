@@ -139,6 +139,9 @@ namespace PasteByDan.Services
         [DllImport("user32.dll")]
         public static extern bool IsClipboardFormatAvailable(uint format);
 
+        [DllImport("user32.dll")]
+        public static extern bool IsIconic(IntPtr hWnd);
+
         [DllImport("kernel32.dll")]
         public static extern uint GetLastError();
 
@@ -181,6 +184,7 @@ namespace PasteByDan.Services
 
         public const uint INPUT_KEYBOARD = 1;
         public const uint KEYEVENTF_KEYUP = 0x0002;
+        public const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
         public const uint GMEM_MOVEABLE = 0x0002;
         public const uint GMEM_ZEROINIT = 0x0040;
         public const uint CF_UNICODETEXT = 13;

@@ -59,12 +59,13 @@ namespace PasteByDan.Services
             {
                 var inputs = new Win32.INPUT[4];
 
+                // Use Right Ctrl (0xA3) to avoid PowerToys remapping Left Ctrl → Win
                 inputs[0].Type = Win32.INPUT_KEYBOARD;
-                inputs[0].U.ki.wVk = 0x11;
-                inputs[0].U.ki.dwFlags = 0;
+                inputs[0].U.ki.wVk = 0xA3; // VK_RCONTROL
+                inputs[0].U.ki.dwFlags = Win32.KEYEVENTF_EXTENDEDKEY;
 
                 inputs[1].Type = Win32.INPUT_KEYBOARD;
-                inputs[1].U.ki.wVk = 0x56;
+                inputs[1].U.ki.wVk = 0x56; // V
                 inputs[1].U.ki.dwFlags = 0;
 
                 inputs[2].Type = Win32.INPUT_KEYBOARD;
@@ -72,8 +73,8 @@ namespace PasteByDan.Services
                 inputs[2].U.ki.dwFlags = Win32.KEYEVENTF_KEYUP;
 
                 inputs[3].Type = Win32.INPUT_KEYBOARD;
-                inputs[3].U.ki.wVk = 0x11;
-                inputs[3].U.ki.dwFlags = Win32.KEYEVENTF_KEYUP;
+                inputs[3].U.ki.wVk = 0xA3; // VK_RCONTROL
+                inputs[3].U.ki.dwFlags = Win32.KEYEVENTF_EXTENDEDKEY | Win32.KEYEVENTF_KEYUP;
 
                 int inputSize = Marshal.SizeOf(typeof(Win32.INPUT));
                 uint sent = Win32.SendInput(4, inputs, inputSize);

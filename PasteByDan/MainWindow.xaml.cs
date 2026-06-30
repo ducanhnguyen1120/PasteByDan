@@ -195,14 +195,16 @@ namespace PasteByDan
         private void PasteItem(ClipboardItem item)
         {
             if (item == null) return;
-            CopyItem(item);
+            // Do NOT call CopyItem again — ClickCount=1 already wrote clipboard before ClickCount=2 fires.
+            // Calling it again causes a race: EmptyClipboard removes CF_EXCLUDE right as
+            // Windows Clipboard History checks the notification from write #1 → chw shows.
             var hwnd = _prevHwnd;
             Log($"PasteItem: prevHwnd={hwnd.ToInt64():X}, myHwnd={_hwnd.ToInt64():X}");
 
             // Transfer focus to target BEFORE hiding — we still have foreground rights now
             if (hwnd != IntPtr.Zero && hwnd != _hwnd)
             {
-                Win32.ShowWindow(hwnd, 9); // SW_RESTORE if minimized
+                if (Win32.IsIconic(hwnd)) Win32.ShowWindow(hwnd, 9); // SW_RESTORE only if minimized
                 bool r = Win32.SetForegroundWindow(hwnd);
                 Log($"SetForegroundWindow={r}");
             }
@@ -228,7 +230,6 @@ namespace PasteByDan
                 }
                 catch (Exception ex2) { Log($"Clipboard read error: {ex2.Message}"); }
                 Log($"Timer fired: fg={fg.ToInt64():X}");
-                PasteService.WmPasteTo(hwnd);
                 PasteService.SendCtrlV();
             };
             timer.Start();
