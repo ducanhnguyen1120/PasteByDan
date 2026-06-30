@@ -77,8 +77,9 @@ namespace PasteByDan.Services
                     Win32.SetClipboardData(Win32.CF_UNICODETEXT, hMem);
                 }
 
-                // Suppress clipboard history popup
-                Win32.SetClipboardData(CF_EXCLUDE, IntPtr.Zero);
+                // Suppress clipboard history — must allocate real memory (IntPtr.Zero = delayed rendering, doesn't work)
+                IntPtr hExclude = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, 1);
+                Win32.SetClipboardData(CF_EXCLUDE, hExclude);
                 Win32.CloseClipboard();
             }
             catch
@@ -119,7 +120,8 @@ namespace PasteByDan.Services
                     }
                 }
 
-                Win32.SetClipboardData(CF_EXCLUDE, IntPtr.Zero);
+                IntPtr hExclude2 = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, 1);
+                Win32.SetClipboardData(CF_EXCLUDE, hExclude2);
                 Win32.CloseClipboard();
             }
             catch

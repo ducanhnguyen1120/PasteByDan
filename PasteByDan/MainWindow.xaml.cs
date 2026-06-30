@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -162,15 +161,25 @@ namespace PasteByDan
             }
         }
 
-        private async void PasteItem(ClipboardItem item)
+        private void PasteItem(ClipboardItem item)
         {
             if (item == null) return;
             CopyItem(item);
+            var hwnd = _prevHwnd;
             Hide();
-            // Focus previous window from UI thread — has message loop so AttachThreadInput works
-            PasteService.FocusWindow(_prevHwnd);
-            await Task.Delay(200);
-            PasteService.SendCtrlV();
+            // Focus on UI thread immediately after hide (UI thread has message loop → AttachThreadInput reliable)
+            PasteService.FocusWindow(hwnd);
+            // SendCtrlV after 200ms, also on UI thread via DispatcherTimer
+            var timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(200)
+            };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                PasteService.SendCtrlV();
+            };
+            timer.Start();
         }
 
         // ----- Window events -----
@@ -198,6 +207,24 @@ namespace PasteByDan
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _vm.SearchText = SearchBox.Text;
+        }
+
+        // ----- Card click/double-click -----
+
+        private void Card_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var item = (sender as FrameworkElement)?.Tag as ClipboardItem;
+            if (item == null) return;
+            if (e.ClickCount == 2)
+            {
+                e.Handled = true;
+                PasteItem(item);
+            }
+            else if (e.ClickCount == 1)
+            {
+                e.Handled = true;
+                CopyItem(item);
+            }
         }
 
         // ----- Card buttons -----

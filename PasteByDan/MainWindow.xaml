@@ -199,15 +199,9 @@
                                         Background="{DynamicResource CardBg}"
                                         BorderBrush="{DynamicResource CardBorder}"
                                         BorderThickness="1" CornerRadius="8"
-                                        Cursor="Hand">
-                                    <Border.InputBindings>
-                                        <MouseBinding MouseAction="LeftClick"
-                                                      Command="{Binding CopyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                      CommandParameter="{Binding}"/>
-                                        <MouseBinding MouseAction="LeftDoubleClick"
-                                                      Command="{Binding PasteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                      CommandParameter="{Binding}"/>
-                                    </Border.InputBindings>
+                                        Cursor="Hand"
+                                        Tag="{Binding}"
+                                        MouseLeftButtonDown="Card_MouseLeftButtonDown">
                                     <Border.ContextMenu>
                                         <ContextMenu Tag="{Binding}">
                                             <MenuItem Header="Copy" Click="CtxCopy_Click" Tag="{Binding}"/>
