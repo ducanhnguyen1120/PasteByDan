@@ -62,37 +62,68 @@ namespace PasteByDan.Services
 
         public static void WriteTextSuppressed(string text, IntPtr hwnd)
         {
+            Log($"WriteText: CF_EXCLUDE={CF_EXCLUDE}");
+            SetIgnoreNext(true);
+            bool opened = false;
+            for (int i = 0; i < 5; i++)
+            {
+                if (Win32.OpenClipboard(hwnd)) { opened = true; break; }
+                System.Threading.Thread.Sleep(10);
+            }
+            if (!opened) { SetIgnoreNext(false); Log("WriteText: OpenClipboard failed"); return; }
             try
             {
-                Log($"WriteText: CF_EXCLUDE={CF_EXCLUDE}, ignoreNext={_ignoreNext}");
-                SetIgnoreNext(true);
-                var data = new System.Windows.DataObject();
-                data.SetText(text);
-                data.SetData("ExcludeClipboardContentFromMonitorProcessing", new byte[1]);
-                System.Windows.Clipboard.SetDataObject(data, copy: true);
-                Log("WriteText: SetDataObject done");
+                Win32.EmptyClipboard();
+                var bytes = System.Text.Encoding.Unicode.GetBytes(text + "\0");
+                IntPtr hText = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, (uint)bytes.Length);
+                if (hText != IntPtr.Zero)
+                {
+                    IntPtr ptr = Win32.GlobalLock(hText);
+                    if (ptr != IntPtr.Zero) { Marshal.Copy(bytes, 0, ptr, bytes.Length); Win32.GlobalUnlock(hText); }
+                    Win32.SetClipboardData(Win32.CF_UNICODETEXT, hText);
+                }
+                if (CF_EXCLUDE != 0)
+                {
+                    IntPtr hEx = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE | Win32.GMEM_ZEROINIT, 1);
+                    if (hEx != IntPtr.Zero) { Win32.SetClipboardData(CF_EXCLUDE, hEx); Log($"CF_EXCLUDE set, hEx={hEx.ToInt64():X}"); }
+                }
             }
-            catch (Exception ex)
-            {
-                Log($"WriteText FAILED: {ex.Message}");
-                SetIgnoreNext(false);
-            }
+            catch (Exception ex) { Log($"WriteText error: {ex.Message}"); SetIgnoreNext(false); }
+            finally { Win32.CloseClipboard(); Log("WriteText: CloseClipboard done"); }
         }
 
         public static void WriteImageSuppressed(BitmapSource bmp, IntPtr hwnd)
         {
+            SetIgnoreNext(true);
+            bool opened = false;
+            for (int i = 0; i < 5; i++)
+            {
+                if (Win32.OpenClipboard(hwnd)) { opened = true; break; }
+                System.Threading.Thread.Sleep(10);
+            }
+            if (!opened) { SetIgnoreNext(false); return; }
             try
             {
-                SetIgnoreNext(true);
-                var data = new System.Windows.DataObject();
-                data.SetImage(bmp);
-                data.SetData("ExcludeClipboardContentFromMonitorProcessing", new byte[1]);
-                System.Windows.Clipboard.SetDataObject(data, copy: true);
+                Win32.EmptyClipboard();
+                var dibData = BitmapSourceToDib(bmp);
+                if (dibData != null)
+                {
+                    IntPtr hMem = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE, (uint)dibData.Length);
+                    if (hMem != IntPtr.Zero)
+                    {
+                        IntPtr ptr = Win32.GlobalLock(hMem);
+                        if (ptr != IntPtr.Zero) { Marshal.Copy(dibData, 0, ptr, dibData.Length); Win32.GlobalUnlock(hMem); }
+                        Win32.SetClipboardData(Win32.CF_DIB, hMem);
+                    }
+                }
+                if (CF_EXCLUDE != 0)
+                {
+                    IntPtr hEx = Win32.GlobalAlloc(Win32.GMEM_MOVEABLE | Win32.GMEM_ZEROINIT, 1);
+                    if (hEx != IntPtr.Zero) Win32.SetClipboardData(CF_EXCLUDE, hEx);
+                }
             }
-            catch
-            {
-                SetIgnoreNext(false);
-            }
+            catch { SetIgnoreNext(false); }
+            finally { Win32.CloseClipboard(); }
         }
 
         private static string BitmapSourceToBase64(BitmapSource bmp)

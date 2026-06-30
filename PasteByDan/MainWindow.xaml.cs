@@ -19,6 +19,8 @@ namespace PasteByDan
         private NotifyIcon _trayIcon;
         private bool _settingsOpen = false;
         private bool _isDark = true;
+        private IntPtr _winEventHook;
+        private Win32.WinEventDelegate _winEventDelegate;
 
         private const int HOTKEY_ID = 9001;
         private const uint MOD_CTRL_SHIFT = Win32.MOD_CONTROL | Win32.MOD_SHIFT;
@@ -44,6 +46,12 @@ namespace PasteByDan
 
             Win32.AddClipboardFormatListener(_hwnd);
             RegisterHotkey();
+
+            // Track last real foreground window continuously
+            _winEventDelegate = new Win32.WinEventDelegate(OnForegroundChanged);
+            _winEventHook = Win32.SetWinEventHook(
+                Win32.EVENT_SYSTEM_FOREGROUND, Win32.EVENT_SYSTEM_FOREGROUND,
+                IntPtr.Zero, _winEventDelegate, 0, 0, Win32.WINEVENT_OUTOFCONTEXT);
         }
 
         private void RegisterHotkey()
@@ -56,6 +64,7 @@ namespace PasteByDan
         {
             Win32.RemoveClipboardFormatListener(_hwnd);
             Win32.UnregisterHotKey(_hwnd, HOTKEY_ID);
+            if (_winEventHook != IntPtr.Zero) Win32.UnhookWinEvent(_winEventHook);
             _trayIcon?.Dispose();
             base.OnClosed(e);
         }
@@ -89,6 +98,17 @@ namespace PasteByDan
             });
         }
 
+        private void OnForegroundChanged(IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
+            int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        {
+            // Keep track of the last real foreground window (not ours)
+            if (hwnd != IntPtr.Zero && hwnd != _hwnd)
+            {
+                _prevHwnd = hwnd;
+                Log($"FG changed: {hwnd.ToInt64():X}");
+            }
+        }
+
         private void ToggleWindow()
         {
             if (IsVisible)
@@ -97,7 +117,6 @@ namespace PasteByDan
             }
             else
             {
-                _prevHwnd = Win32.GetForegroundWindow();
                 Log($"ToggleWindow show: prevHwnd={_prevHwnd.ToInt64():X}");
                 PositionWindow();
                 Show();

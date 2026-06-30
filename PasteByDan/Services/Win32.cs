@@ -133,9 +133,25 @@ namespace PasteByDan.Services
             public uint biClrImportant;
         }
 
+        // WinEvent hook for foreground tracking
+        public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
+            int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax,
+            IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc,
+            uint idProcess, uint idThread, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+        public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+        public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+
         public const uint INPUT_KEYBOARD = 1;
         public const uint KEYEVENTF_KEYUP = 0x0002;
         public const uint GMEM_MOVEABLE = 0x0002;
+        public const uint GMEM_ZEROINIT = 0x0040;
         public const uint CF_UNICODETEXT = 13;
         public const uint CF_DIB = 8;
         public const uint WM_CLIPBOARDUPDATE = 0x031D;
