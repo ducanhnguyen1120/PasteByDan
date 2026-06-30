@@ -19,6 +19,10 @@ namespace PasteByDan.ViewModels
         public ObservableCollection<ClipboardItem> FilteredItems { get; } = new ObservableCollection<ClipboardItem>();
         public ObservableCollection<ClipGroup> Groups { get; } = new ObservableCollection<ClipGroup>();
 
+        // Set by MainWindow after construction
+        public System.Windows.Input.ICommand CopyCommand { get; set; }
+        public System.Windows.Input.ICommand PasteCommand { get; set; }
+
         public string SearchText
         {
             get => _searchText;

@@ -202,10 +202,10 @@
                                         Cursor="Hand">
                                     <Border.InputBindings>
                                         <MouseBinding MouseAction="LeftClick"
-                                                      Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      Command="{Binding CopyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       CommandParameter="{Binding}"/>
                                         <MouseBinding MouseAction="LeftDoubleClick"
-                                                      Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      Command="{Binding PasteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       CommandParameter="{Binding}"/>
                                     </Border.InputBindings>
                                     <Border.ContextMenu>

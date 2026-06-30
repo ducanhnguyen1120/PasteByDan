@@ -24,17 +24,13 @@ namespace PasteByDan
         private const int HOTKEY_ID = 9001;
         private const uint MOD_CTRL_SHIFT = Win32.MOD_CONTROL | Win32.MOD_SHIFT;
 
-        public ICommand CopyCommand { get; }
-        public ICommand PasteCommand { get; }
-
         public MainWindow()
         {
             InitializeComponent();
             _vm = new MainViewModel();
+            _vm.CopyCommand = new RelayCommand<ClipboardItem>(CopyItem);
+            _vm.PasteCommand = new RelayCommand<ClipboardItem>(PasteItem);
             DataContext = _vm;
-
-            CopyCommand = new RelayCommand<ClipboardItem>(CopyItem);
-            PasteCommand = new RelayCommand<ClipboardItem>(PasteItem);
 
             PositionWindow();
             SetupTray();
